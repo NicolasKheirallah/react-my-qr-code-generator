@@ -1,0 +1,22 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "react-my-qr-code-generator",
+    "environment": "spo",
+    "packageManager": "npm",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart",
+    "template": "react",
+    "componentName": "QRCode",
+    "componentDescription": "Generates QR codes",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.18.0",
+    "sdksVersions": {},
+    "version": "1.21.0",
+    "libraryName": "react-my-qr-code-generator",
+    "libraryId": "9390db07-076d-441b-ac5a-e81b36e204d7",
+    "solutionShortDescription": "react-my-qr-code-generator description"
+  }
+}
