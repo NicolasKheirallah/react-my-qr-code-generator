@@ -37,9 +37,9 @@ A modern, feature-rich SharePoint Framework (SPFx) web part for generating custo
 
 ## Solution
 
-| Solution                   | Author(s)                |
-| -------------------------- | ------------------------ |
-| react-my-qr-code-generator | Your Name (@yourtwitter) |
+| Solution                   | Author(s)          |
+| -------------------------- | ------------------ |
+| react-my-qr-code-generator | Nicolas kheirallah |
 
 ## Version history
 
