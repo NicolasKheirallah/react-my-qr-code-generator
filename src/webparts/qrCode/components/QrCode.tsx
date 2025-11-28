@@ -21,12 +21,23 @@ import {
   Toggle
 } from '@fluentui/react';
 import { saveAs } from 'file-saver';
-import { QRContentType, IWiFiData, IVCardData, IEmailData, ISMSData, IPhoneData, IQRHistory } from '../types/QRTypes';
+import { 
+  QRContentType, 
+  IWiFiData, 
+  IVCardData, 
+  IEmailData, 
+  ISMSData, 
+  IPhoneData, 
+  ITeamsMeetingData,
+  IMeetingRoomData,
+  ICalendarEventData,
+  IQRHistory 
+} from '../types/QRTypes';
 import { QRContentGenerator } from '../utils/QRContentGenerator';
 import { GraphService } from '../services/GraphService';
 import { FilePicker, IFilePickerResult } from '@pnp/spfx-controls-react/lib/FilePicker';
-import { IFolder } from '@pnp/spfx-controls-react/lib/FolderPicker';
-import { SaveToSharePointDialog } from './SaveToSharePointDialog';
+import { SaveToListDialog } from './SaveToListDialog';
+import { SPService } from '../services/SPService';
 import { WebPartTitle } from '@pnp/spfx-controls-react/lib/WebPartTitle';
 import { IQRStyleOptions, IQRFrameOptions, DEFAULT_STYLE_OPTIONS, DEFAULT_FRAME_OPTIONS } from '../types/QRStyleTypes';
 import { Card } from './Card';
@@ -56,6 +67,9 @@ interface IQrCodeState {
   emailData: IEmailData;
   smsData: ISMSData;
   phoneData: IPhoneData;
+  teamsMeetingData: ITeamsMeetingData;
+  meetingRoomData: IMeetingRoomData;
+  calendarEventData: ICalendarEventData;
   
   styleOptions: IQRStyleOptions;
   frameOptions: IQRFrameOptions;
@@ -63,6 +77,7 @@ interface IQrCodeState {
   
   showSaveDialog: boolean;
   graphService: GraphService | undefined;
+  spService: SPService | undefined;
   
   isDragging: boolean;
   
@@ -79,11 +94,17 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
     const savedHistory = localStorage.getItem('qr-history');
     const history: IQRHistory[] = savedHistory ? JSON.parse(savedHistory) : [];
     
-    props.context.msGraphClientFactory.getClient('3').then(client => {
-      this.setState({ graphService: new GraphService(client) });
-    }).catch(() => {
-      console.warn('Graph client initialization failed');
-    });
+    let graphService: GraphService | undefined;
+    if (this.props.context) {
+      this.props.context.msGraphClientFactory.getClient('3').then(client => {
+        graphService = new GraphService(client);
+        this.setState({ graphService });
+      }).catch(() => {
+        console.warn('Graph client initialization failed');
+      });
+    }
+
+    const spService = new SPService(this.props.context);
     
     this.state = {
       contentType: QRContentType.URL,
@@ -96,22 +117,25 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
       includeMargin: props.includeMargin !== undefined ? props.includeMargin : true,
       useCurrentPage: false,
       wifiData: { ssid: '', password: '', encryption: 'WPA', hidden: false },
-      vcardData: { firstName: '', lastName: '', organization: '', title: '', phone: '', email: '', website: '', address: '', city: '', zipCode: '', country: '' },
-      emailData: { to: '', subject: '', body: '' },
+      vcardData: { firstName: '', lastName: '', mobile: '', phone: '', email: '', company: '', jobTitle: '', street: '', city: '', zip: '', country: '', website: '' },
+      emailData: { email: '', subject: '', body: '' },
       smsData: { phone: '', message: '' },
       phoneData: { phone: '' },
+      teamsMeetingData: { subject: '', startTime: new Date(), endTime: new Date(), joinUrl: '' },
+      meetingRoomData: { roomName: '', roomEmail: '' },
+      calendarEventData: { title: '', startTime: new Date(), endTime: new Date(), location: '', description: '', allDay: false },
       styleOptions: DEFAULT_STYLE_OPTIONS,
       frameOptions: DEFAULT_FRAME_OPTIONS,
       showPhoneMockup: true,
       showSaveDialog: false,
-      graphService: undefined,
+      graphService: undefined, // Will be set by the promise above
+      spService,
       isDragging: false,
       history
     };
   }
 
   public render(): React.ReactElement<IQrCodeProps> {
-
     return (
       <section className={styles.qrCode}>
         <Stack tokens={stackTokens}>
@@ -121,7 +145,6 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
             updateProperty={this.props.updateProperty}
           />
           
-          {/* Quick Action Templates */}
           {this._renderQuickActions()}
           
           <Pivot aria-label="QR Code Generator Tabs">
@@ -133,51 +156,19 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
             </PivotItem>
           </Pivot>
 
-          {/* SaveToSharePoint Dialog */}
-          {this.state.showSaveDialog && (
-            <SaveToSharePointDialog
-              isOpen={this.state.showSaveDialog}
-              onDismiss={() => this.setState({ showSaveDialog: false })}
-              onSave={this._handleSaveToSharePoint}
-              context={this.props.context}
-            />
-          )}
+          <SaveToListDialog
+            isOpen={this.state.showSaveDialog}
+            onSave={this._handleSaveToList}
+            onDismiss={() => this.setState({ showSaveDialog: false })}
+          />
         </Stack>
       </section>
-    );
-  }
-
-  private _renderQuickActions(): JSX.Element {
-    const templates = [
-      { type: QRContentType.URL, icon: 'Link', label: 'URL' },
-      { type: QRContentType.WiFi, icon: 'WifiEthernet', label: 'WiFi' },
-      { type: QRContentType.VCard, icon: 'Contact', label: 'Contact' },
-      { type: QRContentType.Email, icon: 'Mail', label: 'Email' },
-      { type: QRContentType.SMS, icon: 'Message', label: 'SMS' },
-      { type: QRContentType.Phone, icon: 'Phone', label: 'Phone' },
-    ];
-
-    return (
-      <Stack horizontal tokens={{ childrenGap: 8 }} wrap>
-        <Label>{strings.QuickActionsLabel}</Label>
-        {templates.map(template => (
-          <TooltipHost key={template.type} content={strings.CreateQRCodeTooltip.replace('{0}', template.label)}>
-            <CommandBarButton
-              iconProps={{ iconName: template.icon }}
-              text={template.label}
-              onClick={() => this.setState({ contentType: template.type })}
-              checked={this.state.contentType === template.type}
-            />
-          </TooltipHost>
-        ))}
-      </Stack>
     );
   }
 
   private _renderGenerateTab(): JSX.Element {
     return (
       <Stack horizontal tokens={horizontalStackTokens} className={styles.generateTab}>
-        {/* Left Panel - Controls */}
         <Stack tokens={stackTokens} className={styles.panel}>
           <Card title={strings.ContentSettingsTitle}>
             {this._renderContentForm()}
@@ -188,7 +179,6 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
           </Card>
         </Stack>
 
-        {/* Right Panel - Preview */}
         <Stack tokens={stackTokens} horizontalAlign="center" className={styles.previewPanel}>
           <Card title={strings.LivePreviewTitle}>
             {this._renderPreview()}
@@ -197,57 +187,6 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
       </Stack>
     );
   }
-
-  private _renderContentForm(): JSX.Element {
-    const { contentType, qrText, useCurrentPage, wifiData, vcardData, emailData, smsData, phoneData } = this.state;
-
-    return (
-      <>
-        <QRContentForm
-          contentType={contentType}
-          qrText={qrText}
-          useCurrentPage={useCurrentPage}
-          wifiData={wifiData}
-          vcardData={vcardData}
-          emailData={emailData}
-          smsData={smsData}
-          phoneData={phoneData}
-          onTextChange={this._onTextChange}
-          onUseCurrentPageChange={this._onUseCurrentPageChange}
-          onWiFiDataChange={(data) => this.setState({ wifiData: data })}
-          onVCardDataChange={(data) => this.setState({ vcardData: data })}
-          onEmailDataChange={(data) => this.setState({ emailData: data })}
-          onSMSDataChange={(data) => this.setState({ smsData: data })}
-          onPhoneDataChange={(data) => this.setState({ phoneData: data })}
-        />
-        
-        {/* SharePoint Integration Controls */}
-        {contentType === QRContentType.URL && this.state.graphService && (
-          <Stack>
-            <FilePicker
-              accepts={[".jpg", ".png", ".jpeg", ".svg", ".pdf", ".docx", ".xlsx", ".pptx", ".txt"]}
-              buttonLabel={strings.BrowseSharePointButton}
-              buttonIcon="SharePointLogo"
-              onSave={(filePickerResult: IFilePickerResult[]) => {
-                if (filePickerResult && filePickerResult.length > 0) {
-                  this.setState({ qrText: filePickerResult[0].fileAbsoluteUrl });
-                }
-              }}
-              context={this.props.context}
-              onCancel={() => {}}
-              hideWebSearchTab={true}
-              hideOrganisationalAssetTab={true}
-              hideRecentTab={false}
-              hideSiteFilesTab={false}
-              hideLocalUploadTab={true}
-              hideLinkUploadTab={true}
-            />
-          </Stack>
-        )}
-      </>
-    );
-  }
-
 
   private _renderCustomizationControls(): JSX.Element {
     const { qrSize, errorLevel, logoUrl, includeMargin, foregroundColor, backgroundColor, styleOptions, frameOptions } = this.state;
@@ -405,12 +344,108 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
       case QRContentType.Email: return 'Mail';
       case QRContentType.SMS: return 'Message';
       case QRContentType.Phone: return 'Phone';
+      case QRContentType.TeamsMeeting: return 'TeamsLogo';
+      case QRContentType.MeetingRoom: return 'Room';
+      case QRContentType.CalendarEvent: return 'Event';
       default: return 'QRCode';
     }
   }
 
+  private _renderQuickActions(): JSX.Element {
+    const templates = [
+      { type: QRContentType.URL, icon: 'Link', label: 'URL' },
+      { type: QRContentType.WiFi, icon: 'WifiEthernet', label: 'WiFi' },
+      { type: QRContentType.VCard, icon: 'Contact', label: 'Contact' },
+      { type: QRContentType.Email, icon: 'Mail', label: 'Email' },
+      { type: QRContentType.SMS, icon: 'Message', label: 'SMS' },
+      { type: QRContentType.Phone, icon: 'Phone', label: 'Phone' },
+      { type: QRContentType.TeamsMeeting, icon: 'TeamsLogo', label: 'Teams' },
+      { type: QRContentType.MeetingRoom, icon: 'Room', label: 'Room' },
+      { type: QRContentType.CalendarEvent, icon: 'Event', label: 'Event' },
+    ];
+
+    return (
+      <Stack horizontal tokens={{ childrenGap: 8 }} wrap>
+        <Label>{strings.QuickActionsLabel}</Label>
+        {templates.map(template => (
+          <TooltipHost key={template.type} content={strings.CreateQRCodeTooltip.replace('{0}', template.label)}>
+            <CommandBarButton
+              iconProps={{ iconName: template.icon }}
+              text={template.label}
+              onClick={() => this.setState({ contentType: template.type })}
+              checked={this.state.contentType === template.type}
+            />
+          </TooltipHost>
+        ))}
+      </Stack>
+    );
+  }
+
+  private _renderContentForm(): JSX.Element {
+    const { 
+      contentType, qrText, useCurrentPage, 
+      wifiData, vcardData, emailData, smsData, phoneData,
+      teamsMeetingData, meetingRoomData, calendarEventData 
+    } = this.state;
+
+    return (
+      <>
+        <QRContentForm
+          contentType={contentType}
+          qrText={qrText}
+          useCurrentPage={useCurrentPage}
+          wifiData={wifiData}
+          vcardData={vcardData}
+          emailData={emailData}
+          smsData={smsData}
+          phoneData={phoneData}
+          teamsMeetingData={teamsMeetingData}
+          meetingRoomData={meetingRoomData}
+          calendarEventData={calendarEventData}
+          onTextChange={this._onTextChange}
+          onUseCurrentPageChange={this._onUseCurrentPageChange}
+          onWiFiDataChange={(data) => this.setState({ wifiData: data })}
+          onVCardDataChange={(data) => this.setState({ vcardData: data })}
+          onEmailDataChange={(data) => this.setState({ emailData: data })}
+          onSMSDataChange={(data) => this.setState({ smsData: data })}
+          onPhoneDataChange={(data) => this.setState({ phoneData: data })}
+          onTeamsMeetingDataChange={(data) => this.setState({ teamsMeetingData: data })}
+          onMeetingRoomDataChange={(data) => this.setState({ meetingRoomData: data })}
+          onCalendarEventDataChange={(data) => this.setState({ calendarEventData: data })}
+        />
+        
+        {contentType === QRContentType.URL && this.state.graphService && (
+          <Stack>
+            <FilePicker
+              accepts={[".jpg", ".png", ".jpeg", ".svg", ".pdf", ".docx", ".xlsx", ".pptx", ".txt"]}
+              buttonLabel={strings.BrowseSharePointButton}
+              buttonIcon="SharePointLogo"
+              onSave={(filePickerResult: IFilePickerResult[]) => {
+                if (filePickerResult && filePickerResult.length > 0) {
+                  this.setState({ qrText: filePickerResult[0].fileAbsoluteUrl });
+                }
+              }}
+              context={this.props.context}
+              onCancel={() => {}}
+              hideWebSearchTab={true}
+              hideOrganisationalAssetTab={true}
+              hideRecentTab={false}
+              hideSiteFilesTab={false}
+              hideLocalUploadTab={true}
+              hideLinkUploadTab={true}
+            />
+          </Stack>
+        )}
+      </>
+    );
+  }
+
   private _getFinalQRText(): string {
-    const { contentType, qrText, useCurrentPage, wifiData, vcardData, emailData, smsData, phoneData } = this.state;
+    const { 
+      contentType, qrText, useCurrentPage, 
+      wifiData, vcardData, emailData, smsData, phoneData,
+      teamsMeetingData, meetingRoomData, calendarEventData 
+    } = this.state;
     const { currentPageUrl } = this.props;
 
     if (useCurrentPage) return currentPageUrl;
@@ -426,6 +461,12 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
         return QRContentGenerator.generateSMS(smsData);
       case QRContentType.Phone:
         return QRContentGenerator.generatePhone(phoneData);
+      case QRContentType.TeamsMeeting:
+        return QRContentGenerator.generateTeamsMeeting(teamsMeetingData);
+      case QRContentType.MeetingRoom:
+        return QRContentGenerator.generateMeetingRoom(meetingRoomData);
+      case QRContentType.CalendarEvent:
+        return QRContentGenerator.generateCalendarEvent(calendarEventData);
       default:
         return qrText;
     }
@@ -439,7 +480,7 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
       id: Date.now().toString(),
       type: contentType,
       content,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       name: QRContentGenerator.getContentTypeName(contentType)
     };
 
@@ -528,25 +569,25 @@ export default class QrCode extends React.Component<IQrCodeProps, IQrCodeState> 
     return null;
   }
 
-  private _handleSaveToSharePoint = async (fileName: string, folder: IFolder): Promise<void> => {
+  private _handleSaveToList = async (title: string, description: string): Promise<void> => {
     try {
-      const { graphService } = this.state;
-      if (!graphService) return;
-
       const blob = this._getQRCodeBlob();
-      if (!blob) return;
+      if (!blob || !this.state.spService) return;
 
-      const sp = await import(/* webpackChunkName: 'pnp-sp' */ '@pnp/sp').then(m => m.sp);
-      await sp.web.getFolderByServerRelativeUrl(folder.ServerRelativeUrl)
-        .files.add(fileName, blob, true);
+      const fileName = `qr-code-${Date.now()}.png`;
+      await this.state.spService.saveQRCode(title, description, blob, fileName);
+
+      const message = strings.SaveSuccessMessage.replace('{0}', title);
+      alert(message);
       
+      this._saveToHistory();
       this.setState({ showSaveDialog: false });
-      alert(strings.SaveSuccessMessage.replace('{0}', fileName));
     } catch (error) {
       console.error('Error saving to SharePoint:', error);
       alert(strings.SaveErrorMessage);
+      this.setState({ showSaveDialog: false });
     }
-  }
+  };
 
   private _downloadPNG = (): void => {
     const canvas = this._qrCodeRef.current?.querySelector('canvas');

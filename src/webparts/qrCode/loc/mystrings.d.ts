@@ -15,6 +15,13 @@ declare interface IQrCodeWebPartStrings {
   DownloadSVGButton: string;
   SaveToSharePointTooltip: string;
   SaveToSharePointButton: string;
+  SaveDialogTitle: string;
+  SaveDialogSubText: string;
+  SaveDialogTitleLabel: string;
+  SaveDialogTitlePlaceholder: string;
+  SaveDialogTitleRequired: string;
+  SaveDialogDescriptionLabel: string;
+  SaveDialogDescriptionPlaceholder: string;
   CopyTooltip: string;
   CopyButton: string;
   PrintTooltip: string;

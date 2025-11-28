@@ -2,21 +2,9 @@
 
 ## Summary
 
-A modern, feature-rich SharePoint Framework (SPFx) web part for generating customizable QR codes directly within SharePoint. This solution provides an intuitive interface for creating QR codes with advanced styling options, multiple content types, and seamless SharePoint integration.
+A modern, feature-rich SharePoint Framework (SPFx) web part for generating customizable QR codes directly within SharePoint. This solution provides an intuitive interface for creating QR codes for URLs, WiFi, Contacts, and now **Teams Meetings, Meeting Rooms, and Calendar Events**. It features advanced styling options, real-time preview, and seamless integration with SharePoint document libraries.
 
 ![QR Code Generator](./assets/qr-code-generator-preview.png)
-
-## Key Features
-
-- **Multiple QR Code Types**: Text/URL, WiFi, VCard, Email, SMS, and Phone
-- **Advanced Styling**: Custom colors, dot patterns, corner styles, and frame options
-- **Live Preview**: Real-time QR code generation with phone mockup visualization
-- **Export Options**: Download as PNG or SVG, copy to clipboard, or print
-- **SharePoint Integration**: Browse SharePoint files and save QR codes to document libraries
-- **History Tracking**: Local storage of recently generated QR codes
-- **Localization**: Support for English (en-US) and Swedish (sv-SE)
-- **Accessibility**: WCAG compliant with contrast validation
-- **Keyboard Shortcuts**: Ctrl+S (download), Ctrl+R (reset)
 
 ## Used SharePoint Framework Version
 
@@ -31,7 +19,7 @@ A modern, feature-rich SharePoint Framework (SPFx) web part for generating custo
 
 ## Prerequisites
 
-- Node.js v22.14.0 or higher (< 23.0.0)
+- Node.js v18.17.1 or higher
 - SharePoint Online environment
 - Appropriate permissions to deploy SPFx solutions
 
@@ -39,13 +27,14 @@ A modern, feature-rich SharePoint Framework (SPFx) web part for generating custo
 
 | Solution                   | Author(s)          |
 | -------------------------- | ------------------ |
-| react-my-qr-code-generator | Nicolas kheirallah |
+| react-my-qr-code-generator | Nicolas Kheirallah |
 
 ## Version history
 
-| Version | Date              | Comments                              |
-| ------- | ----------------- | ------------------------------------- |
-| 1.0.0   | November 28, 2024 | Initial release with full feature set |
+| Version | Date              | Comments                                                                |
+| ------- | ----------------- | ----------------------------------------------------------------------- |
+| 1.1.0   | November 28, 2024 | Added Teams Meeting, Meeting Room, and Calendar Event support           |
+| 1.0.0   | November 28, 2024 | Initial release with full feature set (URL, WiFi, VCard, Styling, Save) |
 
 ## Disclaimer
 
@@ -80,33 +69,40 @@ Upload the `.sppkg` file from `sharepoint/solution` to your App Catalog.
 
 This web part demonstrates the following concepts:
 
-### QR Code Generation
+### 📅 Meeting & Event Integration (New!)
 
-- **Content Types**: Support for Text/URL, WiFi credentials, VCard contacts, Email, SMS, and Phone numbers
-- **Customization**: Extensive styling options including size, colors, error correction levels, and logo embedding
-- **Advanced Styling**: Dot patterns (square, rounded, dots, extra-rounded), corner styles, and custom frames
+- **Teams Meetings**: Generate QR codes with Join URLs, Subject, and Time. Scans directly to join the meeting.
+- **Meeting Rooms**: Create VCard QR codes for meeting rooms including Email and Location.
+- **Calendar Events**: Generate iCalendar (.ics) QR codes to add events to mobile calendars.
 
-### SharePoint Integration
+### 📱 QR Code Generation
 
-- **File Picker**: Browse and select SharePoint files to generate QR codes
-- **Save to SharePoint**: Upload generated QR codes directly to document libraries with custom naming
-- **Context Awareness**: Automatically use current page URL option
+- **Multiple Types**: Support for Text/URL, WiFi credentials, VCard contacts, Email, SMS, and Phone numbers.
+- **Advanced Styling**: Custom colors, dot patterns (square, rounded, dots), corner styles, and custom frames.
+- **Logo Support**: Embed custom logos within the QR code.
+- **Error Correction**: Configurable error correction levels (L, M, Q, H).
 
-### User Experience
+### 📎 SharePoint Integration
 
-- **Tabbed Interface**: Organized layout with Generate and History tabs
-- **Live Preview**: Real-time QR code rendering with optional phone mockup
-- **History Management**: Track and reload recently generated QR codes
-- **Export Options**: Multiple export formats (PNG, SVG) and actions (copy, print)
+- **File Picker**: Browse and select SharePoint files to generate QR codes for documents.
+- **Save to SharePoint**: Upload generated QR codes directly to SharePoint document libraries with custom naming.
+- **Context Awareness**: Option to automatically generate QR code for the current page URL.
 
-### Technical Implementation
+### 🎨 User Experience
 
-- **React Hooks**: Modern functional components with hooks
-- **TypeScript**: Fully typed codebase for better maintainability
-- **SCSS Modules**: Modular styling with CSS modules
-- **PnP Controls**: Integration with @pnp/spfx-controls-react for FilePicker and FolderPicker
-- **Localization**: Multi-language support with resource files
-- **Accessibility**: WCAG 2.1 compliant with contrast validation
+- **Live Preview**: Real-time rendering with an optional phone mockup visualization.
+- **History Management**: Automatically saves generated QR codes to local history for quick access.
+- **Export Options**: Download as PNG or SVG, copy to clipboard, or print directly.
+- **Quick Actions**: One-click templates for common use cases.
+
+### 🛠 Technical Implementation
+
+- **React Hooks**: Built using modern React functional components and hooks.
+- **TypeScript**: Fully typed codebase for robustness.
+- **Fluent UI**: Uses Microsoft Fluent UI controls for a native SharePoint look and feel.
+- **PnP Controls**: Integrates `@pnp/spfx-controls-react` for File and Folder pickers.
+- **Microsoft Graph**: Configured for future integration with Graph API (Permissions added).
+- **Localization**: Multi-language support (English & Swedish).
 
 ## Configuration
 
@@ -117,38 +113,19 @@ The web part includes the following configurable properties:
 
 ## Dependencies
 
-### Key Libraries
-
-- `qr-code-styling`: Advanced QR code generation with styling options
-- `@pnp/spfx-controls-react`: Reusable SPFx controls (FilePicker, FolderPicker)
-- `@fluentui/react`: Microsoft Fluent UI components
-- `file-saver`: File download functionality
-- `@microsoft/microsoft-graph-client`: Microsoft Graph API integration
-
-## Browser Support
-
-- Microsoft Edge (Chromium)
-- Google Chrome
-- Mozilla Firefox
-- Safari
-
-## Known Issues
-
-None at this time.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- `qr-code-styling`: Advanced QR code generation
+- `@pnp/spfx-controls-react`: Reusable SPFx controls
+- `@fluentui/react`: UI components
+- `file-saver`: Client-side file saving
+- `@microsoft/microsoft-graph-client`: Graph API client
 
 ## References
 
 - [Getting started with SharePoint Framework](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/set-up-your-developer-tenant)
 - [Building for Microsoft Teams](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/build-for-teams-overview)
 - [Use Microsoft Graph in your solution](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/web-parts/get-started/using-microsoft-graph-apis)
-- [Publish SharePoint Framework applications to the Marketplace](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/publish-to-marketplace-overview)
-- [Microsoft 365 Patterns and Practices](https://aka.ms/m365pnp) - Guidance, tooling, samples and open-source controls for your Microsoft 365 development
-- [PnP SPFx Controls](https://pnp.github.io/sp-dev-fx-controls-react/) - Reusable React controls for SharePoint Framework
-- [QR Code Styling Library](https://github.com/kozakdenys/qr-code-styling) - Advanced QR code generation
+- [Microsoft 365 Patterns and Practices](https://aka.ms/m365pnp)
+- [QR Code Styling Library](https://github.com/kozakdenys/qr-code-styling)
 
 ## License
 

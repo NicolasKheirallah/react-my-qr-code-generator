@@ -1,6 +1,16 @@
 import * as React from 'react';
-import { Stack, TextField, Toggle, Dropdown, IDropdownOption, TooltipHost, IStackTokens } from '@fluentui/react';
-import { QRContentType, IWiFiData, IVCardData, IEmailData, ISMSData, IPhoneData } from '../types/QRTypes';
+import { Stack, TextField, Toggle, Dropdown, IDropdownOption, TooltipHost, IStackTokens, DatePicker } from '@fluentui/react';
+import { 
+  QRContentType, 
+  IWiFiData, 
+  IVCardData, 
+  IEmailData, 
+  ISMSData, 
+  IPhoneData,
+  ITeamsMeetingData,
+  IMeetingRoomData,
+  ICalendarEventData
+} from '../types/QRTypes';
 import * as strings from 'QrCodeWebPartStrings';
 
 const stackTokens: IStackTokens = { childrenGap: 15 };
@@ -14,6 +24,9 @@ export interface IQRContentFormProps {
   emailData: IEmailData;
   smsData: ISMSData;
   phoneData: IPhoneData;
+  teamsMeetingData: ITeamsMeetingData;
+  meetingRoomData: IMeetingRoomData;
+  calendarEventData: ICalendarEventData;
   onTextChange: (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => void;
   onUseCurrentPageChange: (ev: React.MouseEvent<HTMLElement>, checked?: boolean) => void;
   onWiFiDataChange: (data: IWiFiData) => void;
@@ -21,6 +34,9 @@ export interface IQRContentFormProps {
   onEmailDataChange: (data: IEmailData) => void;
   onSMSDataChange: (data: ISMSData) => void;
   onPhoneDataChange: (data: IPhoneData) => void;
+  onTeamsMeetingDataChange: (data: ITeamsMeetingData) => void;
+  onMeetingRoomDataChange: (data: IMeetingRoomData) => void;
+  onCalendarEventDataChange: (data: ICalendarEventData) => void;
 }
 
 const TextForm: React.FunctionComponent<IQRContentFormProps> = ({ qrText, useCurrentPage, onTextChange, onUseCurrentPageChange }) => (
@@ -106,14 +122,14 @@ const VCardForm: React.FunctionComponent<IQRContentFormProps> = ({ vcardData, on
     
     <TextField
       label={strings.OrganizationLabel}
-      value={vcardData.organization}
-      onChange={(_, value) => onVCardDataChange({ ...vcardData, organization: value || '' })}
+      value={vcardData.company}
+      onChange={(_, value) => onVCardDataChange({ ...vcardData, company: value || '' })}
     />
     
     <TextField
       label={strings.TitleLabel}
-      value={vcardData.title}
-      onChange={(_, value) => onVCardDataChange({ ...vcardData, title: value || '' })}
+      value={vcardData.jobTitle}
+      onChange={(_, value) => onVCardDataChange({ ...vcardData, jobTitle: value || '' })}
     />
     
     <TextField
@@ -142,8 +158,8 @@ const EmailForm: React.FunctionComponent<IQRContentFormProps> = ({ emailData, on
     <TextField
       label={strings.ToLabel}
       type="email"
-      value={emailData.to}
-      onChange={(_, value) => onEmailDataChange({ ...emailData, to: value || '' })}
+      value={emailData.email}
+      onChange={(_, value) => onEmailDataChange({ ...emailData, email: value || '' })}
       required
     />
     
@@ -194,6 +210,113 @@ const PhoneForm: React.FunctionComponent<IQRContentFormProps> = ({ phoneData, on
   </Stack>
 );
 
+const TeamsMeetingForm: React.FunctionComponent<IQRContentFormProps> = ({ teamsMeetingData, onTeamsMeetingDataChange }) => (
+  <Stack tokens={stackTokens}>
+    <TextField
+      label="Meeting Subject"
+      value={teamsMeetingData.subject}
+      onChange={(_, value) => onTeamsMeetingDataChange({ ...teamsMeetingData, subject: value || '' })}
+      required
+    />
+    <DatePicker
+      label="Start Date"
+      value={teamsMeetingData.startTime}
+      onSelectDate={(date) => date && onTeamsMeetingDataChange({ ...teamsMeetingData, startTime: date })}
+    />
+    <DatePicker
+      label="End Date"
+      value={teamsMeetingData.endTime}
+      onSelectDate={(date) => date && onTeamsMeetingDataChange({ ...teamsMeetingData, endTime: date })}
+    />
+    <TextField
+      label="Join URL"
+      multiline
+      rows={3}
+      value={teamsMeetingData.joinUrl}
+      onChange={(_, value) => onTeamsMeetingDataChange({ ...teamsMeetingData, joinUrl: value || '' })}
+      required
+      placeholder="https://teams.microsoft.com/..."
+    />
+    <TextField
+      label="Description"
+      multiline
+      rows={3}
+      value={teamsMeetingData.description}
+      onChange={(_, value) => onTeamsMeetingDataChange({ ...teamsMeetingData, description: value || '' })}
+    />
+  </Stack>
+);
+
+const MeetingRoomForm: React.FunctionComponent<IQRContentFormProps> = ({ meetingRoomData, onMeetingRoomDataChange }) => (
+  <Stack tokens={stackTokens}>
+    <TextField
+      label="Room Name"
+      value={meetingRoomData.roomName}
+      onChange={(_, value) => onMeetingRoomDataChange({ ...meetingRoomData, roomName: value || '' })}
+      required
+    />
+    <TextField
+      label="Room Email"
+      value={meetingRoomData.roomEmail}
+      onChange={(_, value) => onMeetingRoomDataChange({ ...meetingRoomData, roomEmail: value || '' })}
+      required
+      placeholder="room@contoso.com"
+    />
+    <TextField
+      label="Location/Building"
+      value={meetingRoomData.location}
+      onChange={(_, value) => onMeetingRoomDataChange({ ...meetingRoomData, location: value || '' })}
+    />
+    <TextField
+      label="Capacity"
+      type="number"
+      value={meetingRoomData.capacity?.toString()}
+      onChange={(_, value) => onMeetingRoomDataChange({ ...meetingRoomData, capacity: parseInt(value || '0') })}
+    />
+    <TextField
+      label="Equipment"
+      multiline
+      rows={2}
+      value={meetingRoomData.equipment}
+      onChange={(_, value) => onMeetingRoomDataChange({ ...meetingRoomData, equipment: value || '' })}
+      placeholder="TV, Whiteboard, etc."
+    />
+  </Stack>
+);
+
+const CalendarEventForm: React.FunctionComponent<IQRContentFormProps> = ({ calendarEventData, onCalendarEventDataChange }) => (
+  <Stack tokens={stackTokens}>
+    <TextField
+      label="Event Title"
+      value={calendarEventData.title}
+      onChange={(_, value) => onCalendarEventDataChange({ ...calendarEventData, title: value || '' })}
+      required
+    />
+    <DatePicker
+      label="Start Date"
+      value={calendarEventData.startTime}
+      onSelectDate={(date) => date && onCalendarEventDataChange({ ...calendarEventData, startTime: date })}
+    />
+    <DatePicker
+      label="End Date"
+      value={calendarEventData.endTime}
+      onSelectDate={(date) => date && onCalendarEventDataChange({ ...calendarEventData, endTime: date })}
+    />
+    <TextField
+      label="Location"
+      value={calendarEventData.location}
+      onChange={(_, value) => onCalendarEventDataChange({ ...calendarEventData, location: value || '' })}
+    />
+    <TextField
+      label="Description"
+      multiline
+      rows={3}
+      value={calendarEventData.description}
+      onChange={(_, value) => onCalendarEventDataChange({ ...calendarEventData, description: value || '' })}
+    />
+  </Stack>
+);
+
 export const QRContentForm: React.FunctionComponent<IQRContentFormProps> = (props) => {
   const { contentType } = props;
 
@@ -208,6 +331,12 @@ export const QRContentForm: React.FunctionComponent<IQRContentFormProps> = (prop
       return <SMSForm {...props} />;
     case QRContentType.Phone:
       return <PhoneForm {...props} />;
+    case QRContentType.TeamsMeeting:
+      return <TeamsMeetingForm {...props} />;
+    case QRContentType.MeetingRoom:
+      return <MeetingRoomForm {...props} />;
+    case QRContentType.CalendarEvent:
+      return <CalendarEventForm {...props} />;
     default:
       return <TextForm {...props} />;
   }

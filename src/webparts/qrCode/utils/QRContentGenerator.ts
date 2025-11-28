@@ -1,4 +1,15 @@
-import { QRContentType, IWiFiData, IVCardData, IEmailData, ISMSData, IPhoneData } from '../types/QRTypes';
+import { 
+  QRContentType, 
+  IWiFiData, 
+  IVCardData, 
+  IEmailData, 
+  ISMSData, 
+  IPhoneData,
+  ITeamsMeetingData,
+  IMeetingRoomData,
+  ICalendarEventData
+} from '../types/QRTypes';
+import { ICalendarUtils } from './ICalendarUtils';
 
 export class QRContentGenerator {
   /**
@@ -21,14 +32,15 @@ export class QRContentGenerator {
       `N:${data.lastName};${data.firstName};;;`,
     ];
 
-    if (data.organization) lines.push(`ORG:${data.organization}`);
-    if (data.title) lines.push(`TITLE:${data.title}`);
-    if (data.phone) lines.push(`TEL:${data.phone}`);
+    if (data.company) lines.push(`ORG:${data.company}`);
+    if (data.jobTitle) lines.push(`TITLE:${data.jobTitle}`);
+    if (data.mobile) lines.push(`TEL;TYPE=CELL:${data.mobile}`);
+    if (data.phone) lines.push(`TEL;TYPE=WORK:${data.phone}`);
     if (data.email) lines.push(`EMAIL:${data.email}`);
     if (data.website) lines.push(`URL:${data.website}`);
     
-    if (data.address || data.city || data.zipCode || data.country) {
-      lines.push(`ADR:;;${data.address};${data.city};;${data.zipCode};${data.country}`);
+    if (data.street || data.city || data.zip || data.country) {
+      lines.push(`ADR:;;${data.street};${data.city};;${data.zip};${data.country}`);
     }
 
     lines.push('END:VCARD');
@@ -41,7 +53,7 @@ export class QRContentGenerator {
   public static generateEmail(data: IEmailData): string {
     const subject = encodeURIComponent(data.subject);
     const body = encodeURIComponent(data.body);
-    return `mailto:${data.to}?subject=${subject}&body=${body}`;
+    return `mailto:${data.email}?subject=${subject}&body=${body}`;
   }
 
   /**
@@ -59,6 +71,27 @@ export class QRContentGenerator {
   }
 
   /**
+   * Generate Teams Meeting QR code content
+   */
+  public static generateTeamsMeeting(data: ITeamsMeetingData): string {
+    return ICalendarUtils.generateTeamsMeetingICS(data);
+  }
+
+  /**
+   * Generate Meeting Room QR code content
+   */
+  public static generateMeetingRoom(data: IMeetingRoomData): string {
+    return ICalendarUtils.generateRoomVCard(data);
+  }
+
+  /**
+   * Generate Calendar Event QR code content
+   */
+  public static generateCalendarEvent(data: ICalendarEventData): string {
+    return ICalendarUtils.generateEventICS(data);
+  }
+
+  /**
    * Get display name for content type
    */
   public static getContentTypeName(type: QRContentType): string {
@@ -70,6 +103,9 @@ export class QRContentGenerator {
       [QRContentType.Email]: 'Email',
       [QRContentType.SMS]: 'SMS Message',
       [QRContentType.Phone]: 'Phone Number',
+      [QRContentType.TeamsMeeting]: 'Teams Meeting',
+      [QRContentType.MeetingRoom]: 'Meeting Room',
+      [QRContentType.CalendarEvent]: 'Calendar Event',
       [QRContentType.CurrentPage]: 'Current Page'
     };
     return names[type];
